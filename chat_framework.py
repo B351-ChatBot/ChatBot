@@ -7,7 +7,7 @@ class Chat:
         
         self.entryText = tk.StringVar()  
         self.e = tk.Entry(self.root, textvariable=self.entryText, bd=5) # textbox (can't seem to get this to pass the valus, the issue is with this)
-        self.e.bind('<Return>', self.user_response(self.e.get())) # for keyboard (allows users to press enter to send message)
+        #self.e.bind('<Return>', self.user_response(self.e.get())) # for keyboard (allows users to press enter to send message)
         self.e.pack(side="left")
 
         # Links 17 through 26 are comminted out untill I can get the textbox to take the enter key.
@@ -16,14 +16,14 @@ class Chat:
         
         #self.w = tk.Message(self.root, ...)
         
-        '''     
+          
         self.hi_there = tk.Button(self.root)
         self.hi_there["text"]="Reply"
         self.hi_there["command"]=self.user_response()
         self.hi_there.pack(side="right")
 
         print("working")
-        '''
+        
         self.root.mainloop()
 
     # for Database accessing (wasn't sure if we would need this)
@@ -32,9 +32,9 @@ class Chat:
 
     # for users reponse
     # will print the user's message on screen eventually, just prints to shell/commandline for now
-    def user_response(self, event):
+    def user_response(self):
         print("working")
-        print(event.widget.get())
+        print(self.e.get())
 
     # for AI response
     # should randomly pick a work and otuput it. Will use a list untill database is set up.
