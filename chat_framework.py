@@ -13,6 +13,7 @@ class Chat:
         
         self.root.mainloop()
 
+    # value will print in shell, still working on prinint to screen.
     def data_access(self):
          x = sample(l_words, 1)
          self.w.configure(text=self.x)
