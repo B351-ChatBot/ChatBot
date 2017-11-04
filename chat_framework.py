@@ -1,11 +1,14 @@
 import tkinter as tk
+import random
 
 class Chat:
     def __init__(self):
+        self.l = ["hey", "lie", "cat", "dog", "bird", "bat"]
+        
         self.root = tk.Tk()
         self.root.title("Chat Bot")
 
-        self.w = tk.Message(self.root, text="", width=50)
+        self.t = ""
 
         self.e = tk.Entry(self.root, bd=5, width=50)
         self.e.bind(sequence='<Return>', func=self.user_response)
@@ -13,16 +16,24 @@ class Chat:
         
         self.root.mainloop()
 
-    # value will print in shell, still working on prinint to screen.
     def data_access(self):
-         x = sample(l_words, 1)
-         self.w.configure(text=self.x)
+         self.t = sample(l_words, 1)
+         self.w = tk.Label(self.root, text=self.t, width=50)
+         self.w.pack(fill="both", expand=True, padx=10, pady=10)
 
     def user_response(self, event):
-        self.w.configure(text=self.e.get())
+        self.t = self.e.get()
+        self.w = tk.Label(self.root, text=self.t, width=50)
+        self.w.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.ai_response()
+        
 
     def ai_response(self):
-        print("")
+        num = random.randint(0,5)
+        self.t = self.l[num]
+        self.w = tk.Label(self.root, text=self.t, width=50)
+        self.w.pack(fill="both", expand=True, padx=10, pady=10)
     
 
 Chat()
