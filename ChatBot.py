@@ -40,7 +40,6 @@ class ChatBot:
             self.listConv.append(convParts.split(','))
 
     def converse(self,question):
-        print (str(question))
         answer = "lol"
 
         #insert logic to pick proper response, for now just choose at random
