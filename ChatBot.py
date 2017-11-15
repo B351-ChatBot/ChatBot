@@ -69,8 +69,8 @@ class ChatBot:
 
         reduce_qs_tmp = []
         reduce_ans_tmp = []
-        reduce_qs = []
-        reduce_ans = []
+        self.reduce_qs = []
+        self.reduce_ans = []
 
         i = 0
         for q in self.trainQuestions:
@@ -81,26 +81,33 @@ class ChatBot:
         j = 0
         for a in reduce_ans_tmp:
             if (len(a.split()) >= min_senc_len and len(a.split()) <= max_senc_len):
-                reduce_ans.append(a)
-                reduce_qs.append(reduce_qs_tmp[j])
+                self.reduce_ans.append(a)
+                self.reduce_qs.append(reduce_qs_tmp[j])
                 j += 1
 
+        print ("Count of reduced questions: " +str(len(self.reduce_qs))+" - answers: "+str(len(self.reduce_ans)))
         #create vocabulary of words using dictionaries
         self.corpusWords = {}
-        for q in reduce_qs:
+        for q in self.reduce_qs:
             for w in q.split():
                 if not (w in self.corpusWords):
                     self.corpusWords[w] = 1
                 else:
                     self.corpusWords[w] += 1
             
-        for a in reduce_ans:
+        for a in self.reduce_ans:
             for w in a.split():
                 if not (w in self.corpusWords):
                     self.corpusWords[w] = 1
                 else:
                     self.corpusWords[w] += 1
         print("Distinct word count:", len(self.corpusWords))
+        print ("The word 'the' is used " + str(self.corpusWords['the'])+ " times.")
+
+        #create an inverse dictionary to map count to a word
+        self.corpusCountToWords = {value: key for key, value in self.corpusWords.items()}
+        print ("A word that is used 7 times is " + str(self.corpusCountToWords[7])+ ".")
+
 
 
     def converse(self,question):
@@ -108,10 +115,12 @@ class ChatBot:
 
         #insert logic to pick proper response, for now just choose at random
         num = random.randint(0,50000)
-        convToUse = self.movieLines[num]
-        convParts = convToUse.split(' +++$+++ ')
         
-        answer = self.dictId2Line[convParts[0]]
+        #convToUse = self.movieLines[num]
+        #convParts = convToUse.split(' +++$+++ ')
+        #answer = self.dictId2Line[convParts[0]]
+
+        answer = self.reduce_ans[num]
         
         return answer
 
