@@ -13,6 +13,7 @@ import numpy as np
 import tensorflow as tf
 import re
 import random
+import math
 import time
 import sys
 
@@ -108,20 +109,104 @@ class ChatBot:
         self.corpusCountToWords = {value: key for key, value in self.corpusWords.items()}
         print ("A word that is used 7 times is " + str(self.corpusCountToWords[7])+ ".")
 
+        #create a dictionary to map count of sentences containing certain words
+        self.corpusWordOccurs = {}
+        for q in self.reduce_qs:
+            qList = q.split()
+            qList = list(set(q))
+            for w in qList:
+                if not (w in self.corpusWordOccurs):
+                    self.corpusWordOccurs[w] = 1
+                else:
+                    self.corpusWordOccurs[w] += 1
+            
+        for a in self.reduce_ans:
+            aList = a.split()
+            aList = list(set(aList))
+            for w in aList:
+                if not (w in self.corpusWordOccurs):
+                    self.corpusWordOccurs[w] = 1
+                else:
+                    self.corpusWordOccurs[w] += 1
+        print("Word length of the Word Occurance object is:", len(self.corpusWordOccurs))
+        print ("The word 'Jennifer' appears in " + str(self.corpusWordOccurs['Jennifer'])+ " sentences in the reduced corpus.")
 
+        #build dictionary of words -> conversations/sentences
+        self.mapAnswers = {}
+        i = 0
+        for i in range(len(self.reduce_ans)):
+            ans = self.reduce_ans[i]
+            #print ("A:"+ans)
+            aList = ans.split()
+            aList = list(set(aList))
+            for w in aList:
+                if not (w in self.mapAnswers):
+                    self.mapAnswers[w] = [i]
+                else:
+                    self.mapAnswers[w].append(i)
+            i += 1
+        print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
+
+    def calc_tf(self,sentence,word):
+        frequencies = {}
+        wCount = 0
+        for w in sentence.split():
+            if not (w in frequencies):
+                frequencies[w] = 1
+            else:
+                frequencies[w] += 1
+            wCount += 1
+        tf = frequencies[word] / wCount
+        return tf
+
+    def calc_idf(self,word):
+        bigN = len(self.reduce_qs)
+        littleN = self.corpusWordOccurs[word]
+        idf = math.log(bigN/littleN)
+        return idf
+
+    def cleanS(self,statement):
+        statement = statement.replace("?","")
+        statement = statement.replace(".","")
+        statement = statement.replace(",","")
+        statement = statement.replace("!","")
+        statement = statement.replace(":","")
+        statement = statement.replace("&","")
+        return statement
 
     def converse(self,question):
-        answer = "lol"
+        #clean up the question text
+        question = self.cleanS(question)
+        print ("Q: "+question)
+        #determine most relavant term in given statement
+        q_p = question.split()
+        tfIdf = 0
+        i = 0
+        relTerm = q_p[0]
+        for i in range(len(q_p)):
+            tf = self.calc_tf(question,q_p[i])
+            idf = self.calc_idf(q_p[i])
+            if((tf * idf) > tfIdf):
+                tfIdf = (tf * idf)
+                relTerm = q_p[i]
+            i += 1
 
-        #insert logic to pick proper response, for now just choose at random
-        num = random.randint(0,50000)
+        #get sentences that contain the relevent term
+        potentialAnswers = self.mapAnswers[relTerm]
+
+        #choose at random for now
+        answer_index = random.randint(0,len(potentialAnswers)-1)
+        num = potentialAnswers[answer_index]
         
         #convToUse = self.movieLines[num]
         #convParts = convToUse.split(' +++$+++ ')
         #answer = self.dictId2Line[convParts[0]]
-
-        answer = self.reduce_ans[num]
         
+        answer = self.reduce_ans[num]
+        ans_p = answer.split()
+        tf = self.calc_tf(answer,ans_p[0])
+        idf = self.calc_idf(ans_p[0])
+        print ("TF and IDF "+str(tf)+" - "+str(idf))
         return answer
 
     def train(self):
