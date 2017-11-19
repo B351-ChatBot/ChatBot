@@ -16,6 +16,7 @@ import random
 import math
 import time
 import sys
+from ChatBotModel import *
 
 class ChatBot:
     
@@ -27,6 +28,7 @@ class ChatBot:
         self.dictId2Line = {}
         #list of conversations
         self.listConvs = []
+        self.cbm = ChatBotModel(direction="forward", size=1)
 
         #load data into dictionary dictId2Line
         lineParts = []
@@ -146,6 +148,8 @@ class ChatBot:
                     self.mapAnswers[w].append(i)
             i += 1
         print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
+
+        self.cbm.buildGraph()
 
     def calc_tf(self,sentence,word):
         frequencies = {}

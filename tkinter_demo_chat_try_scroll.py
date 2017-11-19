@@ -18,10 +18,22 @@ def enter_pressed(event):
     label.pack()
     return "break"
 
+def myfunction(event):
+    canvas.configure(scrollregion=canvas.bbox("all"),width=200,height=200)
 
-frame = Frame(window, width=500, height=500)
-frame.place(x=20,y=20)
-frame.pack_propagate(False) # prevent frame to resize to the labels size
+myframe = Frame(window, width=500, height=500)
+myframe.place(x=20,y=20)
+myframe.pack_propagate(False) # prevent frame to resize to the labels size
+
+canvas=Canvas(myframe)
+frame=Frame(canvas)
+myscrollbar=Scrollbar(myframe,orient="vertical",command=canvas.yview)
+canvas.configure(yscrollcommand=myscrollbar.set)
+
+myscrollbar.pack(side="right",fill="y")
+canvas.pack(side="left")
+canvas.create_window((0,0),window=frame,anchor='nw')
+frame.bind("<Configure>",myfunction)
 
 input_field.bind("<Return>", enter_pressed)
 frame.pack()
