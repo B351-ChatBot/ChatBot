@@ -52,7 +52,8 @@ class ChatBot:
         self.trainAnswers = []
         for c in self.listConvs:
             #print ("Convs:"+str(c))
-            for i in range(len(c)-1):
+            #for i in range(len(c)-1):
+            for i, line in enumerate(c[:-1]):
                 #print ("I val:"+str(i))
                 lc1 = c[i]
                 lc2 = c[i+1]
@@ -113,7 +114,7 @@ class ChatBot:
         self.corpusWordOccurs = {}
         for q in self.reduce_qs:
             qList = q.split()
-            qList = list(set(q))
+            qList = list(set(qList))
             for w in qList:
                 if not (w in self.corpusWordOccurs):
                     self.corpusWordOccurs[w] = 1
@@ -150,6 +151,8 @@ class ChatBot:
     def calc_tf(self,sentence,word):
         frequencies = {}
         wCount = 0
+        print("Sentence: " + sentence)
+        print("Word: " + word)
         for w in sentence.split():
             if not (w in frequencies):
                 frequencies[w] = 1
@@ -161,6 +164,7 @@ class ChatBot:
 
     def calc_idf(self,word):
         bigN = len(self.reduce_qs)
+        
         littleN = self.corpusWordOccurs[word]
         idf = math.log(bigN/littleN)
         return idf
@@ -183,6 +187,10 @@ class ChatBot:
         tfIdf = 0
         i = 0
         relTerm = q_p[0]
+            
+        cap = relTerm[:1].upper() + relTerm[1:]
+        low = relTerm[:1].lower() + relTerm[1:]
+        
         for i in range(len(q_p)):
             tf = self.calc_tf(question,q_p[i])
             idf = self.calc_idf(q_p[i])
@@ -192,12 +200,25 @@ class ChatBot:
             i += 1
 
         #get sentences that contain the relevent term
-        potentialAnswers = self.mapAnswers[relTerm]
+        potentialAnswersC = self.mapAnswers[cap] #capitals
+        potentialAnswersL = self.mapAnswers[low] #lowers
+
+        potentialAnswers = []
+
+        for p in potentialAnswersC:
+            potentialAnswers.append(p)
+
+        for p in potentialAnswersL:
+            potentialAnswers.append(p)
 
         #choose at random for now
         answer_index = random.randint(0,len(potentialAnswers)-1)
         num = potentialAnswers[answer_index]
+
         
+        for n in potentialAnswers:
+            print("printing: " + self.reduce_ans[n])
+    
         #convToUse = self.movieLines[num]
         #convParts = convToUse.split(' +++$+++ ')
         #answer = self.dictId2Line[convParts[0]]
