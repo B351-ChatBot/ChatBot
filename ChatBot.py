@@ -16,6 +16,7 @@ import random
 import math
 import time
 import sys
+import difflib
 
 class ChatBot:
     
@@ -164,7 +165,6 @@ class ChatBot:
 
     def calc_idf(self,word):
         bigN = len(self.reduce_qs)
-        
         littleN = self.corpusWordOccurs[word]
         idf = math.log(bigN/littleN)
         return idf
@@ -212,18 +212,23 @@ class ChatBot:
             potentialAnswers.append(p)
 
         #choose at random for now
-        answer_index = random.randint(0,len(potentialAnswers)-1)
-        num = potentialAnswers[answer_index]
+        #answer_index = random.randint(0,len(potentialAnswers)-1)
+        #num = potentialAnswers[answer_index]
 
+        best = ""
         
         for n in potentialAnswers:
-            print("printing: " + self.reduce_ans[n])
+            #print("printing: " + self.reduce_ans[n])
+            if not (best == ""):
+                if (difflib.SequenceMatcher(None, question, self.reduce_ans[n]).ratio()  == 0) or (difflib.SequenceMatcher(None, question, self.reduce_ans[n]).ratio()  < (difflib.SequenceMatcher(None, question, best).ratio())):
+                    best = self.reduce_ans[n]
+            else: best = self.reduce_ans[n]
     
         #convToUse = self.movieLines[num]
         #convParts = convToUse.split(' +++$+++ ')
         #answer = self.dictId2Line[convParts[0]]
         
-        answer = self.reduce_ans[num]
+        answer = best
         ans_p = answer.split()
         tf = self.calc_tf(answer,ans_p[0])
         idf = self.calc_idf(ans_p[0])
