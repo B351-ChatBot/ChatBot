@@ -67,7 +67,7 @@ class ChatBot:
         print(len(self.trainAnswers))
 
         #reduce set to sentences between a min and max of words
-        min_senc_len = 2
+        min_senc_len = 1
         max_senc_len = 15
 
         reduce_qs_tmp = []
@@ -188,6 +188,10 @@ class ChatBot:
         tfIdf = 0
         i = 0
         relTerm = q_p[0]
+
+        cap = relTerm[:1].upper() + relTerm[1:]
+        low = relTerm[:1].lower() + relTerm[1:]
+        
         for i in range(len(q_p)):
             tf = self.calc_tf(question,q_p[i])
             idf = self.calc_idf(q_p[i])
@@ -197,7 +201,17 @@ class ChatBot:
             i += 1
 
         #get sentences that contain the relevent term
-        potentialAnswers = self.mapAnswers[relTerm]
+        #get sentences that contain the relevent term
+        potentialAnswersC = self.mapAnswers[cap] #capitals
+        potentialAnswersL = self.mapAnswers[low] #lowers
+
+        potentialAnswers = []
+
+        for p in potentialAnswersC:
+            potentialAnswers.append(p)
+
+        for p in potentialAnswersL:
+            potentialAnswers.append(p)
 
         #choose at random for now
         answer_index = random.randint(0,len(potentialAnswers)-1)
@@ -206,6 +220,9 @@ class ChatBot:
         #convToUse = self.movieLines[num]
         #convParts = convToUse.split(' +++$+++ ')
         #answer = self.dictId2Line[convParts[0]]
+
+        for e in potentialAnswers:
+            print(self.reduce_ans[e])
         
         answer = self.reduce_ans[num]
         ans_p = answer.split()
