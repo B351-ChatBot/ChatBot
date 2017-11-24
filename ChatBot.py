@@ -221,8 +221,8 @@ class ChatBot:
         #convParts = convToUse.split(' +++$+++ ')
         #answer = self.dictId2Line[convParts[0]]
 
-        for e in potentialAnswers:
-            print(self.reduce_ans[e])
+        #for e in potentialAnswers:
+            #print(self.reduce_ans[e])
         
         answer = self.reduce_ans[num]
         ans_p = answer.split()
