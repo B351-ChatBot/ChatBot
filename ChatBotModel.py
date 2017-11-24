@@ -69,7 +69,6 @@ class ChatBotModel(object):
                                               self.decWords)
             
         self.softmaxLossFunction = sampleLoss
-        print ("SoftMaxLossFunction: "+str(self.softmaxLossFunction))
 
         singleCell = tf.contrib.rnn.GRUCell(self.hiddenNetSize)
         self.cell = tf.contrib.rnn.MultiRNNCell([singleCell] * self.layers)

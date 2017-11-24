@@ -149,7 +149,7 @@ class ChatBot:
             i += 1
         print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
 
-        #build graph from our data to use for chat, removing for now, as has TF issues.
+        #build graph from our data to use for chat
         self.cbm.buildGraph()
 
     def calc_tf(self,sentence,word):
@@ -182,53 +182,72 @@ class ChatBot:
     def converse(self,question):
         #clean up the question text
         question = self.cleanS(question)
-        print ("Q: "+question)
-        #determine most relavant term in given statement
-        q_p = question.split()
-        tfIdf = 0
-        i = 0
-        relTerm = q_p[0]
+        #if question contains words for analysis
+        if (question != ""):
+            print ("Q: "+question)
+            #determine most relavant term in given statement
+            q_p = question.split()
+            tfIdf = 0
+            i = 0
+            relTerm = q_p[0]
 
-        cap = relTerm[:1].upper() + relTerm[1:]
-        low = relTerm[:1].lower() + relTerm[1:]
+            cap = relTerm[:1].upper() + relTerm[1:]
+            low = relTerm[:1].lower() + relTerm[1:]
         
-        for i in range(len(q_p)):
-            tf = self.calc_tf(question,q_p[i])
-            idf = self.calc_idf(q_p[i])
-            if((tf * idf) > tfIdf):
-                tfIdf = (tf * idf)
-                relTerm = q_p[i]
-            i += 1
+            for i in range(len(q_p)):
+                #if word exists in the corpus it can be relavant, ignore ones that would throw an error
+                print ("q_p at i:"+str(q_p[i]))
+                if (q_p[i] in self.mapAnswers and q_p[i] != ""):
+                    tf = self.calc_tf(question,q_p[i])
+                    idf = self.calc_idf(q_p[i])
+                    if((tf * idf) > tfIdf):
+                        tfIdf = (tf * idf)
+                        relTerm = q_p[i]
+                i += 1
 
-        #get sentences that contain the relevent term
-        #get sentences that contain the relevent term
-        potentialAnswersC = self.mapAnswers[cap] #capitals
-        potentialAnswersL = self.mapAnswers[low] #lowers
+            #get sentences that contain the relevent term
+            #get sentences that contain the relevent term
+            potentialAnswersC = self.mapAnswers[cap] #capitals
+            potentialAnswersL = self.mapAnswers[low] #lowers
 
-        potentialAnswers = []
+            potentialAnswers = []
 
-        for p in potentialAnswersC:
-            potentialAnswers.append(p)
+            for p in potentialAnswersC:
+                potentialAnswers.append(p)
 
-        for p in potentialAnswersL:
-            potentialAnswers.append(p)
+            for p in potentialAnswersL:
+                potentialAnswers.append(p)
 
-        #choose at random for now
-        answer_index = random.randint(0,len(potentialAnswers)-1)
-        num = potentialAnswers[answer_index]
+            #choose at random for now
+            answer_index = random.randint(0,len(potentialAnswers)-1)
+            num = potentialAnswers[answer_index]
         
-        #convToUse = self.movieLines[num]
-        #convParts = convToUse.split(' +++$+++ ')
-        #answer = self.dictId2Line[convParts[0]]
+            #convToUse = self.movieLines[num]
+            #convParts = convToUse.split(' +++$+++ ')
+            #answer = self.dictId2Line[convParts[0]]
 
-        #for e in potentialAnswers:
-            #print(self.reduce_ans[e])
+            #for e in potentialAnswers:
+                #print(self.reduce_ans[e])
         
-        answer = self.reduce_ans[num]
-        ans_p = answer.split()
-        tf = self.calc_tf(answer,ans_p[0])
-        idf = self.calc_idf(ans_p[0])
-        print ("TF and IDF "+str(tf)+" - "+str(idf))
+            answer = self.reduce_ans[num]
+            ans_p = answer.split()
+            tf = self.calc_tf(answer,ans_p[0])
+            idf = self.calc_idf(ans_p[0])
+            print ("TF and IDF "+str(tf)+" - "+str(idf))
+        else:
+            #reply with confusion as not valid question was provided
+            auto_replies = ["Dave, this conversation can serve no purpose anymore. Goodbye.",
+                            "42",
+                            "I'm sorry, Dave. I'm afraid I can't do that.",
+                            "I didn't get that",
+                            "who me?",
+                            "what dat?"
+                            "I am not sure I know what you mean",
+                            "I am not programmed to help you with that"]
+            #replies pull from 2001 space odyssey, hitchhikers guide to the galaxy, and siri/alexa replies 
+            answer_index = random.randint(0,len(auto_replies)-1)
+            answer = auto_replies[answer_index]
+
         return answer
 
     def train(self):
