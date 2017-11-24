@@ -191,13 +191,16 @@ class ChatBot:
             i = 0
             relTerm = q_p[0]
 
-            cap = relTerm[:1].upper() + relTerm[1:]
-            low = relTerm[:1].lower() + relTerm[1:]
+            cap = []
+            low = []
         
             for i in range(len(q_p)):
                 #if word exists in the corpus it can be relavant, ignore ones that would throw an error
                 print ("q_p at i:"+str(q_p[i]))
                 if (q_p[i] in self.mapAnswers and q_p[i] != ""):
+                    cap = relTerm[:1].upper() + relTerm[1:]
+                    low = relTerm[:1].lower() + relTerm[1:]
+                    
                     tf = self.calc_tf(question,q_p[i])
                     idf = self.calc_idf(q_p[i])
                     if((tf * idf) > tfIdf):
