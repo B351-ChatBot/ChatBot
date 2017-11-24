@@ -150,7 +150,7 @@ class ChatBot:
         print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
 
         #build graph from our data to use for chat, removing for now, as has TF issues.
-        #self.cbm.buildGraph()
+        self.cbm.buildGraph()
 
     def calc_tf(self,sentence,word):
         frequencies = {}

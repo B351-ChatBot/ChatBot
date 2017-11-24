@@ -58,12 +58,13 @@ class ChatBotModel(object):
             self.w = tf.get_variable('proj_w', [self.hiddenNetSize, self.decWords])
             self.b = tf.get_variable('proj_b', [self.decWords])
             self.outputProjection = (self.w, self.b)
-        def sampleLoss(inputs, labels, logits):
+            
+        def sampleLoss(labels, logits):
             labels = tf.reshape(labels, [-1, 1]) #??
             return tf.nn.sampled_softmax_loss(tf.transpose(self.w),
                                               self.b,
-                                              inputs,
                                               labels,
+                                              logits,
                                               self.sampleSize,
                                               self.decWords)
             
