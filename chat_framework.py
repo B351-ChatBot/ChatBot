@@ -36,12 +36,6 @@ class Chat:
         
         self.root.mainloop()
 
-    #show responses?
-    def data_access(self):
-         self.t = sample(l_words, 1)
-         self.w = tk.Label(self.root, text=self.t, width=50)
-         self.w.pack(fill="both", expand=True, padx=10, pady=10)
-
     #capture user response and call ai-response to get an answer?
     def user_response(self, event):
         #get text input by user and save it as self.t
@@ -50,7 +44,7 @@ class Chat:
         self.e.delete(0, "end")
         #get answer text from the bot
         self.a = self.myCB.converse(self.t)
-        self.w = tk.Label(self.root, text=self.t, width=50)
+        self.w = tk.Label(self.root, text="Me: " + self.t, width=50)
         self.w.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.ai_response(self.a)
@@ -59,7 +53,7 @@ class Chat:
     def ai_response(self,a):
         #num = random.randint(0,15)
         self.t = self.a
-        self.w = tk.Label(self.root, text=self.t, width=50)
+        self.w = tk.Label(self.root, text="AI: " + self.t, width=50)
         self.w.pack(fill="both", expand=True, padx=10, pady=10)
 
 
