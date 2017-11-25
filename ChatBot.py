@@ -12,6 +12,7 @@ David Bickel
 import numpy as np
 import tensorflow as tf
 import re
+import os
 import random
 import math
 import time
@@ -20,10 +21,12 @@ from ChatBotModel import *
 
 class ChatBot:
     
-    def __init__(self,corpusTXT,corpusMAP):
+    def __init__(self,corpusTXT,corpusMAP,chkPointPath):
         #load cornel corpus aquired from https://github.com/suriyadeepan/practical_seq2seq/blob/master/datasets/cornell_corpus/
         self.movieLines = open(corpusTXT, encoding='utf-8', errors='ignore').read().split('\n')
         self.convLines = open(corpusMAP, encoding='utf-8', errors='ignore').read().split('\n')
+        #path to any previously loaded training data
+        self.sessionPath = chkPointPath
         #dictionary to hold ID to line mapping data
         self.dictId2Line = {}
         #list of conversations
@@ -131,7 +134,7 @@ class ChatBot:
                 else:
                     self.corpusWordOccurs[w] += 1
         print("Word length of the Word Occurance object is:", len(self.corpusWordOccurs))
-        print ("The word 'Jennifer' appears in " + str(self.corpusWordOccurs['Jennifer'])+ " sentences in the reduced corpus.")
+        print ("The word 'pasta' appears in " + str(self.corpusWordOccurs['pasta'])+ " sentences in the reduced corpus.")
 
         #build dictionary of words -> conversations/sentences
         self.mapAnswers = {}
@@ -147,10 +150,10 @@ class ChatBot:
                 else:
                     self.mapAnswers[w].append(i)
             i += 1
-        print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
+        print ("The word 'apple' appears in the answers: "+str(self.mapAnswers['apple']))
 
-        #build graph from our data to use for chat
-        self.cbm.buildGraph()
+        self.train()
+
 
     def calc_tf(self,sentence,word):
         frequencies = {}
@@ -178,6 +181,153 @@ class ChatBot:
         statement = statement.replace(":","")
         statement = statement.replace("&","")
         return statement
+
+    def checkIfRestore(self, session, saver):
+        #Restore the previously learned data from chatting
+        chkpoint = tf.train.get_checkpoint_state(self.sessionPath)
+        if (chkpoint and chkpoint.model_checkpoint_path):
+            #restore previous state
+            saver.restore(session, chkpoint.model_checkpoint_path)
+        else:
+            #start from scratch so no action needed
+            print ("Starting from scratch..")
+
+    def getSkipStep(self,iteration):
+        #How long should we train before saving weights?
+        if iteration < 100:
+            return 30
+        else: 
+            return 100
+
+    def loadPriorData(self, encFile, decFile, max_training_size=None):
+        encodeFile = open(os.path.join(self.sessionPath, encFile), 'rb')
+        decodeFile = open(os.path.join(self.sessionPath, decFile), 'rb')
+        encode, decode = encodeFile.readline(), decodeFile.readline()
+        dataBuckets = [[] for _ in self.cbm.buckets]
+        i = 0
+        while encode and decode:
+            if (i + 1) % 10000 == 0:
+                print("Bucket number", i)
+            encodeIds = [int(id_n) for id_n in encode.split()]
+            decodeIds = [int(id_n) for id_n in decode.split()]
+            for bucketId, (encodeMaxSize, decodeMaxSize) in enumerate(self.cbm.buckets):
+                if len(encodeIds) <= encodeMaxSize and len(decodeIds) <= decodeMaxSize:
+                    dataBuckets[bucketId].append([encodeIds, decodeIds])
+                    break
+            encode, decode = encodeFile.readline(), decodeFile.readline()
+            i += 1
+        return dataBuckets
+
+    def getBuckets(self):
+        # Build buckets as a data set we can use for our calculations
+        self.testBuckets = self.loadPriorData("testBuckets.enc", "testBuckets.dec")
+        self.dataBuckets = self.loadPriorData("trainBuckets.enc", "trainBuckets.dec")
+        trainingBucketSizes = [len(self.dataBuckets[b]) for b in range(len(self.cbm.buckets))]
+        print("Number of samples in a bucket: "+str(trainingBucketSizes))
+        trainingTotalSize = sum(trainingBucketSizes)
+        if trainingTotalSize < 1:
+            trainingTotalSize = 1
+        # Build a list of increasing numbers from 0 to 1 that will be used in bucket selection
+        self.bucketScale = [sum(trainingBucketSizes[:i + 1]) / trainingTotalSize
+                       for i in range(len(trainingBucketSizes))]
+        print("Bucket scale: "+str(self.bucketScale))
+        return self.testBuckets, self.dataBuckets, self.bucketScale
+
+    def getRandomBucket(self,bucketScale):
+        r = random.random()
+        print ("BucketScale: "+str(bucketScale))
+        return min([i for i in range(len(bucketScale))
+                    if bucketScale[i] > r])
+    
+    def checkLengths(self,encoderSize, decoderSize, encInputs, decInputs, decMasks):
+        #check that the encoder inputs, decoder inputs, and decoder masks are of the expected lengths
+        if len(encInputs) != encoderSize:
+            raise ValueError("Encoder length must be equal to that of the provided bucket,"
+                            " %d != %d." % (len(encInputs), encoderSize))
+        if len(decInputs) != decoderSize:
+            raise ValueError("Decoder length must be equal to that of the provided bucket,"
+                           " %d != %d." % (len(decInputs), decoderSize))
+        if len(decMasks) != decoderSize:
+            raise ValueError("Weights length must be equal to the one provided by the bucket,"
+                           " %d != %d." % (len(decMasks), decoderSize))
+
+    def processStep(self,session, model, encInputs, decInputs, decMasks, bucketId, direction):
+        #Process a single step of the training..
+        #use direction value of "forward" when you are only wanting to train in one direction
+        # or just chatting with the bot
+        encoderSize, decoderSize = self.cbm.buckets[bucketId]
+        checkLengths(encoderSize, decoderSize, encInputs, decInputs, decMasks)
+
+        # setup an input feed from encoder and decoder data
+        inputFeed = {}
+        for step in range(encoderSize):
+            inputFeed[self.cbm.encInputs[step].name] = encInputs[step]
+        for step in range(decoderSize):
+            inputFeed[self.cbm.decInputs[step].name] = decInputs[step]
+            inputFeed[self.cbm.decMasks[step].name] = decMasks[step]
+
+        lastTarget = self.cbm.decInputs[decoderSize].name
+        inputFeed[lastTarget] = np.zeros([self.cbm.batchSize], dtype=np.int32)#??
+
+        # output feed: depends on whether we do a backward step or not.
+        if not (direction == "forward"):
+            outputFeed = [self.cbm.trainOps[bucketId],  #update opertion
+                           self.cbm.gradientNorms[bucketId],  #gradient norm
+                           self.cbm.losses[bucketId]]  #loss
+        else:
+            outputFeed = [self.cbm.losses[bucket_id]]  # loss
+            for step in range(decoderSize):  # output logits.
+                outputFeed.append(self.cbm.outputs[bucketId][step])
+
+        outputs = session.run(outputFeed, inputFeed)
+        if not (direction == "forward"):
+            return outputs[1], outputs[2], None  # Gradient norm, loss, no outputs.
+        else:
+            return None, outputs[0], outputs[1:]  # No gradient norm, loss, outputs.
+
+    def getSingleBatch(self,data_bucket, bucketId, batch_size=1):
+        # Return a single batch for the model
+        encoderSize, decoderSize = self.cbm.buckets[bucketId]
+        encoder_inputs, decoder_inputs = [], []
+
+        for _ in range(batch_size):
+            encInput, decInput = random.choice(data_bucket)
+            # pad data for both encoder and decoder, but reverse the encoder
+            encInputs.append(list(reversed((encInput + (0 * (encoderSize - len(encInput)))))))
+            decInputs.append(decInput + (0 * (decoderSize - len(decInput))))
+
+        # now we create batch-major vectors from the data selected above.
+        batchEncoderInputs = reshape_batch(encoder_inputs, encoder_size, batch_size)
+        batchDecoderInputs = reshape_batch(decoder_inputs, decoder_size, batch_size)
+
+        # create decoder_masks to be 0 for decoders that are padding.
+        batchMasks = []
+        for length_id in range(decoder_size):
+            batch_mask = np.ones(batch_size, dtype=np.float32)
+            for batch_id in range(batch_size):
+                # we set mask to 0 if the corresponding target is a PAD symbol.
+                # the corresponding decoder is decoder_input shifted by 1 forward.
+                if length_id < decoder_size - 1:
+                    target = decoder_inputs[batch_id][length_id + 1]
+                if length_id == decoder_size - 1 or target == config.PAD_ID:
+                    batch_mask[batch_id] = 0.0
+            batch_masks.append(batch_mask)
+        return batch_encoder_inputs, batch_decoder_inputs, batch_masks
+
+    def evalTestData(self,session, chatmodel, testBuckets):
+        #run evaluation on testing data set
+        for bucketId in range(len(self.cbm.buckets)):
+            if len(testBuckets[bucketId]) == 0:
+                print("Testing empty bucket %d" % (bucketId))
+                continue
+            startTime = time.time()
+            encInputs, decInputs, decMasks = data.getSingleBatch(testBuckets[bucketId], 
+                                                                        bucketId,
+                                                                        batch_size=self.cbm.batchSize)
+            _, stepLoss, _ = processStep(session, chatmodel, encInputs, decInputs, 
+                                   decoder_masks, bucket_id, True)
+            print('Test bucket {}: loss {}, time {}'.format(bucketId, stepLoss, time.time() - startTime))
+
 
     def converse(self,question):
         #clean up the question text
@@ -254,6 +404,42 @@ class ChatBot:
         return answer
 
     def train(self):
+
+        #build buckets and graph from our data to use for chat
+        self.testingBuckets, self.dataBuckets, self.bucketScale = self.getBuckets()
+        self.cbm.buildGraph()
+        
+        #create a saver to store session information for the next run
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            print("Starting Training session..")
+            sess.run(tf.global_variables_initializer())
+
+            self.checkIfRestore(sess, saver)
+
+            iteration = self.cbm.globalStep.eval()
+            totalLoss = 0
+            while True:
+                skipStep = self.getSkipStep(iteration)
+                bucketId = self.getRandomBucket(self.bucketScale)
+                encInputs, decInputs, decMasks = self.getSingleBatch(self.dataBuckets[bucketId],
+                                                                bucketId,
+                                                                batch_size=self.cbm.batchSize)
+                startTime = time.time()
+                _, stepLoss, _ = self.processStep(sess, self.cbm, encInputs, decInputs, decMasks, bucketId, False)
+                totalLoss += stepLoss
+                iteration += 1
+                if (iteration % skipStep == 0):
+                    print("Iteration {}: loss {}, time {}".format(iteration, totalLoss/skipStep, time.time() - startTime))
+                    startTime = time.time()
+                    totalLoss = 0
+                    saver.save(sess, os.path.join(self.sessionPath, 'chatbot'), global_step=self.cbm.globalStep)
+                    if (iteration % (10 * skipStep) == 0):
+                        # Run evals on development set and print their loss
+                        self.evalTestData(sess, model, test_buckets)
+                        startTime = time.time()
+                    sys.stdout.flush()
         return 1
 
 
