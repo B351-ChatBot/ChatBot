@@ -11,6 +11,7 @@ David Bickel
 
 import tkinter as tk
 import random
+#import mysqlHelper as myDB
 from ChatBot import *
 
 class Chat:
@@ -21,7 +22,7 @@ class Chat:
         #db = myDB.mysqlHelper('db.ini')#be sure to add the db.ini file per google doc
         #word_query = """SELECT word FROM test_data""";
         #self.l = db.getQueryResult(word_query)
-        self.myCB = ChatBot("corpus/movie_lines.txt","corpus/movie_conversations.txt","training/checkpoint")
+        self.myCB = ChatBot('corpus/movie_lines.txt','corpus/movie_conversations.txt')
         
         self.root = tk.Tk()
         self.root.title("Chat Bot")
