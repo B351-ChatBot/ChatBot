@@ -1,6 +1,6 @@
 #PESUDOCODE
 
-#CREATING DATA SETS AND LABELS #>>> use create_sentiment_featuresets.py for reference for next chunk
+#1: CREATING DATA SETS AND LABELS #>>> use create_sentiment_featuresets.py for reference for next chunk
 
     # https://www.youtube.com/watch?v=7fcWfUavO7E, DOWNLOAD NLTK, 6:00
     #use nltk
@@ -20,13 +20,26 @@
 
     #
     
-#1: INITIALIZING THE NEURAL NET
+#2: INITIALIZING THE NEURAL NET
 
-#returns 10 best guesses in response
-#if true response isnt in best guesses,
+    #requires a list of all rare unique words, and a list of all unique answers. e.g. work in 1: first
+    #need to convert the output to return top 10....
 
-#either, copy code from a simple neural net example then modify.
-#or learn one_hot alternative, and how to aprox top 10 results
+
+#3: TRAINING
+
+    #Input = [[0 1 0 0 1 ...x] correct reply, [0 ...] y] where x is the number of rare unique words, and y is the number of questions
+    #correct reply = [0 0 0 ... 1 .. 0 .. x] wjere x = number of unique answers.
+    #this is stored in a pickle in original example
+
+    #returns 10 best guesses in response
+    #if true response isnt in best guesses,
+
+#4: Interaction
+
+    #need to figure out how to interact with neural net after training
+    #need to place it within the proper frameworks in our code
+
 
 
 
