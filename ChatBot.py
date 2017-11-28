@@ -25,8 +25,7 @@ class ChatBot:
         #load cornel corpus aquired from https://github.com/suriyadeepan/practical_seq2seq/blob/master/datasets/cornell_corpus/
         self.movieLines = open(corpusTXT, encoding='utf-8', errors='ignore').read().split('\n')
         self.convLines = open(corpusMAP, encoding='utf-8', errors='ignore').read().split('\n')
-        #path to any previously loaded training data
-        self.sessionPath = chkPointPath
+
         #dictionary to hold ID to line mapping data
         self.dictId2Line = {}
         #list of conversations
