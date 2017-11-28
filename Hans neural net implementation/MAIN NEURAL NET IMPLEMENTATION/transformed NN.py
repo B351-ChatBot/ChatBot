@@ -86,6 +86,7 @@ output_layer = {'f_fum':None,
 
 # Nothing changes
 def neural_network_model(data):
+    #print(data): some placeholder? 
 
     l1 = tf.add(tf.matmul(data,hidden_1_layer['weight']), hidden_1_layer['bias'])
     l1 = tf.nn.relu(l1)
@@ -98,6 +99,7 @@ def neural_network_model(data):
 
     output = tf.matmul(l3,output_layer['weight']) + output_layer['bias']
 
+    #print(output): #Tensor("add:0", shape=(?, 2), dtype=float32), only called once. presumably to make the model, tf does the rest
     return output
 
 def train_neural_network(x):
@@ -114,11 +116,16 @@ def train_neural_network(x):
 			while i < len(train_x):
 				start = i
 				end = i+batch_size
+                                                                        #print(train_y[start]) #[1,0], aka the label, trainx = input
 				batch_x = np.array(train_x[start:end])
 				batch_y = np.array(train_y[start:end])
 
-				_, c = sess.run([optimizer, cost], feed_dict={x: batch_x,
-				                                              y: batch_y})
+				t, c = sess.run([optimizer, cost], feed_dict={x: batch_x,
+				                                              y: batch_y})  #two operations, defined above
+				#print(t) #optimizer spit out none
+##				print(feed_dict) #not defined, prob an argument being fed into both optimizer then cost.
+
+##				print(sess.run(tf.nn.top_k(train_x[start], 10)))
 				epoch_loss += c
 				i+=batch_size
 				
@@ -127,6 +134,7 @@ def train_neural_network(x):
 		accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
 		print('Accuracy:',accuracy.eval({x:test_x, y:test_y}))
+		
 
 	    
 train_neural_network(x)

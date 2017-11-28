@@ -15,7 +15,7 @@ def create_lexicon(pos,neg):
 	with open(pos,'r') as f:
 		contents = f.readlines()
 		for l in contents[:hm_lines]:
-			all_words = word_tokenize(l)
+			all_words = word_tokenize(l) #tokenize takes a str, returns a list of words
 			lexicon += list(all_words)
 
 	with open(neg,'r') as f:
@@ -25,14 +25,16 @@ def create_lexicon(pos,neg):
 			lexicon += list(all_words)
 
 	lexicon = [lemmatizer.lemmatize(i) for i in lexicon]
+	#stem + lemmatize removes tense, plural
 	w_counts = Counter(lexicon)
+	#w_counts = {"the":52152, ...}
 	l2 = []
-	for w in w_counts:
+	for w in w_counts: #limits words to rare, but not extremely rare words
 		#print(w_counts[w])
-		if 1000 > w_counts[w] > 50:
+		if 1000 > w_counts[w] > 10:
 			l2.append(w)
 	print(len(l2))
-	return l2
+	return l2  #the input into NN
 
 
 
@@ -41,6 +43,11 @@ def create_lexicon(pos,neg):
 def sample_handling(sample,lexicon,classification):
 
 	featureset = []
+	#featureset will eventually =
+##	[
+##                [[0 1 0 1...], [1 0...]]
+##                [[feature], [label]], feature is input into NN, label is correct answer
+##      ] data input on left, correct answer on right, in each cell
 
 	with open(sample,'r') as f:
 		contents = f.readlines()
@@ -65,22 +72,27 @@ def create_feature_sets_and_labels(pos,neg,test_size = 0.1):
 	features = []
 	features += sample_handling('pos.txt',lexicon,[1,0])
 	features += sample_handling('neg.txt',lexicon,[0,1])
-	random.shuffle(features)
+	random.shuffle(features) 
 	features = np.array(features)
 
-	testing_size = int(test_size*len(features))
+	testing_size = int(test_size*len(features)) #test size = last 10% or .1
 
-	train_x = list(features[:,0][:-testing_size])
-	train_y = list(features[:,1][:-testing_size])
-	test_x = list(features[:,0][-testing_size:])
-	test_y = list(features[:,1][-testing_size:])
+	#this dogs is ok
+	#dog ok,
+        #[0,0,0,0,0,0..... 1, ... 1, ..]
+	
+
+	train_x = list(features[:,0][:-testing_size]) # features[:,0] = features, [1 0 0 1... representing rare unique words in question
+	train_y = list(features[:,1][:-testing_size]) # features[:,1] = labels, [0 0 0 0... 1 ... 0] representing the one right answer
+	test_x = list(features[:,0][-testing_size:]) #final accuracy test, using last 10% of data
+	test_y = list(features[:,1][-testing_size:]) 
 
 	return train_x,train_y,test_x,test_y
 
 
 if __name__ == '__main__':
 	train_x,train_y,test_x,test_y = create_feature_sets_and_labels('pos.txt','neg.txt')
-	# if you want to pickle this data:
+	# if you want to pickle this data: pickle = save data
 	with open('sentiment_set.pickle','wb') as f:
 		pickle.dump([train_x,train_y,test_x,test_y],f)
 
