@@ -10,6 +10,8 @@ import tensorflow as tf
 #from tensorflow.examples.tutorials.mnist import input_data
 import pickle
 
+hm_lines = 100000
+lemmatizer = WordNetLemmatizer()
 
 # Nothing changes
 def neural_network_model(data):
@@ -29,8 +31,67 @@ def neural_network_model(data):
     #print(output): #Tensor("add:0", shape=(?, 2), dtype=float32), only called once. presumably to make the model, tf does the rest
     return output
 
-def create_feature_sets_and_labels(pos,neg,test_size = 0.1):
-	lexicon = create_lexicon(pos,neg)
+#1: CREATING DATA SETS AND LABELS #>>> use create_sentiment_featuresets.py for reference for next chunk
+def get_data(corpus):
+
+    lexicon = []
+    with open(corpus,'r') as f:
+        contents = f.readlines()
+        for l in contents[:hm_lines]:
+            all_words = word_tokenize(l) #tokenize takes a str, returns a list of words
+            lexicon += list(all_words)
+
+        lexicon = [lemmatizer.lemmatize(i) for i in lexicon]
+	#stem + lemmatize removes tense, plural
+        w_counts = Counter(lexicon)
+	#w_counts = {"the":52152, ...}
+        l2 = []
+        for w in w_counts: #limits words to rare, but not extremely rare words
+            if 1000 > w_counts[w] > 10:
+                l2.append(w)
+            #print(len(l2))
+        return l2  #the input into NN
+    # https://www.youtube.com/watch?v=7fcWfUavO7E, DOWNLOAD NLTK, 6:00
+
+
+    #from corpus, create a list of all words:
+    #use tolkenize to turn the string of all words into, list of all words.
+    #allWords = word_tolkenize
+    #stem the list of all words, then lemmatizer. use create_sentiment_featuresets.py for reference
+    #create
+    #freqDict = {"the":241251, "all":41241, ...
+
+    #trim to a list, entries in freqDict with freq about <1000? so arbitrarily rare words only, this becomes
+    #   InputVector = ["apple", "politics", ...
+
+    #
+def sample_handling(sample,lexicon,classification):
+
+	featureset = []
+	#featureset will eventually =
+##	[
+##                [[0 1 0 1...], [1 0...]]
+##                [[feature], [label]], feature is input into NN, label is correct answer
+##      ] data input on left, correct answer on right, in each cell
+
+	with open(sample,'r') as f:
+		contents = f.readlines()
+		for l in contents[:hm_lines]:
+			current_words = word_tokenize(l.lower())
+			current_words = [lemmatizer.lemmatize(i) for i in current_words]
+			features = np.zeros(len(lexicon))
+			for word in current_words:
+				if word.lower() in lexicon:
+					index_value = lexicon.index(word.lower())
+					features[index_value] += 1
+
+			features = list(features)
+			featureset.append([features,classification])
+
+	return featureset
+
+def create_feature_sets_and_labels(pos,test_size = 0.1):
+	lexicon = get_data(pos)
 	features = []
 	features += sample_handling('pos.txt',lexicon,[1,0])
 	random.shuffle(features) 
@@ -49,48 +110,10 @@ def create_feature_sets_and_labels(pos,neg,test_size = 0.1):
 	test_y = list(features[:,1][-testing_size:]) 
 
 	return train_x,train_y,test_x,test_y
-
-#1: CREATING DATA SETS AND LABELS #>>> use create_sentiment_featuresets.py for reference for next chunk
-def get_data():
-    
-    lemmatizer = WordNetLemmatizer()
-    hm_lines = 100000
-    corpus = "pos.txt"
-    lexicon = []
-    with open(corpus,'r') as f:
-        contents = f.readlines()
-        for l in contents[:hm_lines]:
-            all_words = word_tokenize(l) #tokenize takes a str, returns a list of words
-            lexicon += list(all_words)
-
-        lexicon = [lemmatizer.lemmatize(i) for i in lexicon]
-	#stem + lemmatize removes tense, plural
-        w_counts = Counter(lexicon)
-	#w_counts = {"the":52152, ...}
-        l2 = []
-        for w in w_counts: #limits words to rare, but not extremely rare words
-            if 1000 > w_counts[w] > 10:
-                l2.append(w)
-            print(len(l2))
-        return l2  #the input into NN
-    # https://www.youtube.com/watch?v=7fcWfUavO7E, DOWNLOAD NLTK, 6:00
-
-
-    #from corpus, create a list of all words:
-    #use tolkenize to turn the string of all words into, list of all words.
-    #allWords = word_tolkenize
-    #stem the list of all words, then lemmatizer. use create_sentiment_featuresets.py for reference
-    #create
-    #freqDict = {"the":241251, "all":41241, ...
-
-    #trim to a list, entries in freqDict with freq about <1000? so arbitrarily rare words only, this becomes
-    #   InputVector = ["apple", "politics", ...
-
-    #
     
 #2: INITIALIZING THE NEURAL NET
 def initialize():
-    train_x,train_y,test_x,test_y = create_feature_sets_and_labels('pos.txt','neg.txt')
+    train_x,train_y,test_x,test_y = create_feature_sets_and_labels('pos.txt')
 
     n_nodes_hl1 = 1500
     n_nodes_hl2 = 1500
@@ -171,9 +194,6 @@ def chat():
     return 1
 
 
-
-		
-get_data()
 initialize()
 	    
 train_neural_network(x)
