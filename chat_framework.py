@@ -11,18 +11,13 @@ David Bickel
 
 import tkinter as tk
 import random
-#import mysqlHelper as myDB
 from ChatBot import *
 
 class Chat:
     #initialize the list of words and start up the gui
     def __init__(self):
-        #populate key words from the database
-        #self.l = ["hey", "lie", "cat", "dog", "bird", "bat"]"""
-        #db = myDB.mysqlHelper('db.ini')#be sure to add the db.ini file per google doc
-        #word_query = """SELECT word FROM test_data""";
-        #self.l = db.getQueryResult(word_query)
-        self.myCB = ChatBot('corpus/movie_lines.txt','corpus/movie_conversations.txt')
+
+        self.myCB = ChatBot("corpus/movie_lines.txt","corpus/movie_conversations.txt")
         
         self.root = tk.Tk()
         self.root.title("Chat Bot")
@@ -51,7 +46,6 @@ class Chat:
 
     #test version only returns a random selected word as a response
     def ai_response(self,a):
-        #num = random.randint(0,15)
         self.t = self.a
         self.w = tk.Label(self.root, text="AI: " + self.t, width=50)
         self.w.pack(fill="both", expand=True, padx=10, pady=10)

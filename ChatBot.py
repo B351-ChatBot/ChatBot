@@ -12,11 +12,11 @@ David Bickel
 import numpy as np
 import tensorflow as tf
 import re
+import os
 import random
 import math
 import time
 import sys
-from ChatBotModel import *
 
 class ChatBot:
     
@@ -24,11 +24,11 @@ class ChatBot:
         #load cornel corpus aquired from https://github.com/suriyadeepan/practical_seq2seq/blob/master/datasets/cornell_corpus/
         self.movieLines = open(corpusTXT, encoding='utf-8', errors='ignore').read().split('\n')
         self.convLines = open(corpusMAP, encoding='utf-8', errors='ignore').read().split('\n')
+
         #dictionary to hold ID to line mapping data
         self.dictId2Line = {}
         #list of conversations
         self.listConvs = []
-        self.cbm = ChatBotModel(direction="forward", size=1)
 
         #load data into dictionary dictId2Line
         lineParts = []
@@ -40,31 +40,19 @@ class ChatBot:
         #load conversation data
         convParts = []
         for line in self.convLines[:-1]:
-            #print ("Line: "+str(line))
             convParts = line.split(' +++$+++ ')[-1][1:-1].replace("'","").replace(" ","")
-            #print ("ConvParts: "+str(convParts))
-            #convIds = convParts.split(',')
-            #for convId in convIds:
-            #    self.listConvs.append(convId)
             self.listConvs.append(convParts.split(','))
-            #print ("listConvs: "+str(self.listConvs))
 
         #turn data into two lists questions and answers for training
         self.trainQuestions = []
         self.trainAnswers = []
         for c in self.listConvs:
-            #print ("Convs:"+str(c))
+
             for i in range(len(c)-1):
-                #print ("I val:"+str(i))
                 lc1 = c[i]
                 lc2 = c[i+1]
-                #print ("keys: "+str(lc1)+" - "+ str(lc2))
-                #print ("values: "+str(self.dictId2Line[lc1])+" - "+ str(self.dictId2Line[lc2]))
-                
                 self.trainQuestions.append(self.dictId2Line[lc1])
                 self.trainAnswers.append(self.dictId2Line[lc2])
-        print(len(self.trainQuestions))
-        print(len(self.trainAnswers))
 
         #reduce set to sentences between a min and max of words
         min_senc_len = 1
@@ -93,17 +81,19 @@ class ChatBot:
         self.corpusWords = {}
         for q in self.reduce_qs:
             for w in q.split():
-                if not (w in self.corpusWords):
-                    self.corpusWords[w] = 1
+                wlow = w.lower()
+                if not (wlow in self.corpusWords):
+                    self.corpusWords[wlow] = 1
                 else:
-                    self.corpusWords[w] += 1
+                    self.corpusWords[wlow] += 1
             
         for a in self.reduce_ans:
             for w in a.split():
-                if not (w in self.corpusWords):
-                    self.corpusWords[w] = 1
+                wlow = w.lower()
+                if not (wlow in self.corpusWords):
+                    self.corpusWords[wlow] = 1
                 else:
-                    self.corpusWords[w] += 1
+                    self.corpusWords[wlow] += 1
         print("Distinct word count:", len(self.corpusWords))
         print ("The word 'the' is used " + str(self.corpusWords['the'])+ " times.")
 
@@ -117,40 +107,76 @@ class ChatBot:
             qList = q.split()
             qList = list(set(q))
             for w in qList:
-                if not (w in self.corpusWordOccurs):
-                    self.corpusWordOccurs[w] = 1
+                wlow = w.lower()
+                if not (wlow in self.corpusWordOccurs):
+                    self.corpusWordOccurs[wlow] = 1
                 else:
-                    self.corpusWordOccurs[w] += 1
+                    self.corpusWordOccurs[wlow] += 1
             
         for a in self.reduce_ans:
             aList = a.split()
             aList = list(set(aList))
             for w in aList:
-                if not (w in self.corpusWordOccurs):
-                    self.corpusWordOccurs[w] = 1
+                wlow = w.lower()
+                if not (wlow in self.corpusWordOccurs):
+                    self.corpusWordOccurs[wlow] = 1
                 else:
-                    self.corpusWordOccurs[w] += 1
+                    self.corpusWordOccurs[wlow] += 1
         print("Word length of the Word Occurance object is:", len(self.corpusWordOccurs))
-        print ("The word 'Jennifer' appears in " + str(self.corpusWordOccurs['Jennifer'])+ " sentences in the reduced corpus.")
+        print ("The word 'pasta' appears in " + str(self.corpusWordOccurs['pasta'])+ " sentences in the reduced corpus.")
+
+        #build dictionary of each word with a unique index value in the cleaned up questions and answers, also the reverse for index -> word
+        self.corpusWordToIndex = {}
+        i = 0
+        for q in self.reduce_qs:
+            qList = q.split()
+            qList = list(set(q))
+            for w in qList:
+                wlow = w.lower()
+                if not (wlow in self.corpusWordToIndex):
+                    self.corpusWordToIndex[wlow] = i
+                    i+=1
+        for a in self.reduce_ans:
+            aList = a.split()
+            aList = list(set(aList))
+            for w in aList:
+                wlow = w.lower()
+                if not (wlow in self.corpusWordToIndex):
+                    self.corpusWordToIndex[wlow] = i
+                    i+=1
+        self.corpusIndexToWord = {}
+        for w in self.corpusWordToIndex:
+            i = self.corpusWordToIndex[w]
+            self.corpusIndexToWord[i] = w
+        
+        print("The length of the Word Index object is:", len(self.corpusWordToIndex))
+        print ("The word 'pasta' has an index value of " + str(self.corpusWordToIndex['pasta'])+ ", and the word 'sauce' has an index of " + str(self.corpusWordToIndex['sauce']))
 
         #build dictionary of words -> conversations/sentences
         self.mapAnswers = {}
         i = 0
         for i in range(len(self.reduce_ans)):
             ans = self.reduce_ans[i]
-            #print ("A:"+ans)
             aList = ans.split()
             aList = list(set(aList))
             for w in aList:
-                if not (w in self.mapAnswers):
-                    self.mapAnswers[w] = [i]
+                wlow = w.lower()
+                if not (wlow in self.mapAnswers):
+                    self.mapAnswers[wlow] = [i]
                 else:
-                    self.mapAnswers[w].append(i)
+                    self.mapAnswers[wlow].append(i)
             i += 1
-        print ("The word 'Jennifer' appears in the answers: "+str(self.mapAnswers['Jennifer']))
+        print ("The word 'apple' appears in the answers: "+str(self.mapAnswers['apple']))
 
-        #build graph from our data to use for chat
-        self.cbm.buildGraph()
+        #show some basic stats from initialization
+        print ("Total words in the corpus: "+str(len(self.corpusWordToIndex)))
+        print ("Some info for the word 'orange'\nindex: "
+               +str(self.corpusWordToIndex['orange'])
+               +"\noccurs: "
+               +str(self.corpusWords['orange'])
+               +" \nexists in # of sentences: "
+               +str(len(self.mapAnswers['orange'])))
+
 
     def calc_tf(self,sentence,word):
         frequencies = {}
@@ -179,6 +205,7 @@ class ChatBot:
         statement = statement.replace("&","")
         return statement
 
+
     def converse(self,question):
         #clean up the question text
         question = self.cleanS(question)
@@ -190,53 +217,47 @@ class ChatBot:
             tfIdf = 0
             i = 0
             relTerm = q_p[0]
-
-            cap = []
-            low = []
+            low = relTerm.lower()
         
             for i in range(len(q_p)):
                 #if word exists in the corpus it can be relavant, ignore ones that would throw an error
-                print ("q_p at i:"+str(q_p[i]))
-                if (q_p[i] in self.mapAnswers and q_p[i] != ""):
-                    cap = relTerm[:1].upper() + relTerm[1:]
-                    low = relTerm[:1].lower() + relTerm[1:]
-                    
-                    tf = self.calc_tf(question,q_p[i])
-                    idf = self.calc_idf(q_p[i])
-                    if((tf * idf) > tfIdf):
-                        tfIdf = (tf * idf)
-                        relTerm = q_p[i]
+                low = q_p[i].lower()
+                qlow = question.lower()
+                print ("Current word: "+low)
+                if (low in self.mapAnswers and low != ""):
+
+                    print ("Previous Relevant Word: "+str(relTerm))
+                    print ("Previous TF-IDF Score: "+str(tfIdf))                    
+                    tf = self.calc_tf(qlow,low)
+                    idf = self.calc_idf(low)
+                    newTfIdf = (tf * idf)
+                    print ("New TF-IDF Score: "+str(newTfIdf)) 
+                    if(newTfIdf > tfIdf):
+                        tfIdf = newTfIdf
+                        relTerm = low
                 i += 1
 
-            #get sentences that contain the relevent term
-            #get sentences that contain the relevent term
-            potentialAnswersC = self.mapAnswers[cap] #capitals
-            potentialAnswersL = self.mapAnswers[low] #lowers
+            lowRelTerm = relTerm.lower()
+
+            potentialAnswersL = self.mapAnswers[lowRelTerm] #lowers
 
             potentialAnswers = []
-
-            for p in potentialAnswersC:
-                potentialAnswers.append(p)
 
             for p in potentialAnswersL:
                 potentialAnswers.append(p)
 
-            #choose at random for now
-            answer_index = random.randint(0,len(potentialAnswers)-1)
-            num = potentialAnswers[answer_index]
-        
-            #convToUse = self.movieLines[num]
-            #convParts = convToUse.split(' +++$+++ ')
-            #answer = self.dictId2Line[convParts[0]]
-
-            #for e in potentialAnswers:
-                #print(self.reduce_ans[e])
-        
-            answer = self.reduce_ans[num]
-            ans_p = answer.split()
-            tf = self.calc_tf(answer,ans_p[0])
-            idf = self.calc_idf(ans_p[0])
-            print ("TF and IDF "+str(tf)+" - "+str(idf))
+            #instead of random sentence selection lets use highest tf-idf to make selection
+            bestTfIdf = 0
+            for answer in potentialAnswers:
+                answerText = self.reduce_ans[answer]
+                ans_tf = self.calc_tf(answerText.lower(),lowRelTerm)
+                ans_idf = self.calc_idf(lowRelTerm)
+                ans_tfIdf = (tf * idf)
+                if(ans_tfIdf >= bestTfIdf):
+                    top_answer = answerText
+                print ("Answer "+str(top_answer))
+                print ("Answer TF-IDF "+str(tfIdf))
+            
         else:
             #reply with confusion as not valid question was provided
             auto_replies = ["Dave, this conversation can serve no purpose anymore. Goodbye.",
@@ -249,20 +270,11 @@ class ChatBot:
                             "I am not programmed to help you with that"]
             #replies pull from 2001 space odyssey, hitchhikers guide to the galaxy, and siri/alexa replies 
             answer_index = random.randint(0,len(auto_replies)-1)
-            answer = auto_replies[answer_index]
+            top_answer = auto_replies[answer_index]
 
-        return answer
+        return top_answer
 
     def train(self):
+
+
         return 1
-
-
-#def main():
-#   c = ChatBot()
-
-#    print(str(len(c.movieLines)))
-#    answer = c.converse("what")
-#    print(str(answer)) 
-
-
-#main()
