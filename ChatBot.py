@@ -17,9 +17,6 @@ import random
 import math
 import time
 import sys
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 
 class ChatBot:
     
@@ -80,24 +77,10 @@ class ChatBot:
                 j += 1
         print ("Count of reduced questions: " +str(len(self.reduce_qs))+" - answers: "+str(len(self.reduce_ans)))
         
-        #1: CREATING DATA SETS AND LABELS #>>> use create_sentiment_featuresets.py for reference for next chunk
-
-        # https://www.youtube.com/watch?v=7fcWfUavO7E, DOWNLOAD NLTK, 6:00
-        #use nltk
-
-        #from corpus, create a list of all words:
-        #use tolkenize to turn the string of all words into, list of all words.
-        #allWordsx = word_tolkenize
-
-        #stem the list of all words, then lemmatizer. use create_sentiment_featuresets.py for reference
-        #create
-        #freqDict = {"the":241251, "all":41241, ...
-        lemmatizer = WordNetLemmatizer()
         self.corpusWords = {}
         for q in self.reduce_qs:
             for w in q.split():
-                wl = w.lower()
-                wlow = lemmatizer.lemmatize(wl)
+                wlow = w.lower()
                 if not (wlow in self.corpusWords):
                     self.corpusWords[wlow] = 1
                 else:
@@ -105,17 +88,13 @@ class ChatBot:
             
         for a in self.reduce_ans:
             for w in a.split():
-                wl = w.lower()
-                wlow = lemmatizer.lemmatize(wl)
+                wlow = w.lower()
                 if not (wlow in self.corpusWords):
                     self.corpusWords[wlow] = 1
                 else:
                     self.corpusWords[wlow] += 1
         print("Distinct word count:", len(self.corpusWords))
         print ("The word 'the' is used " + str(self.corpusWords['the'])+ " times.")
-
-        #trim to a list, entries in freqDict with freq about <1000? so arbitrarily rare words only, this becomes
-        #   InputVector = ["apple", "politics", ...
         
         #create vocabulary of words using dictionaries
         self.corpusWords = {}
