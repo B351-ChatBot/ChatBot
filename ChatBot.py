@@ -17,7 +17,6 @@ import random
 import math
 import time
 import sys
-from ChatBotModel import *
 
 class ChatBot:
     
@@ -30,7 +29,6 @@ class ChatBot:
         self.dictId2Line = {}
         #list of conversations
         self.listConvs = []
-        self.cbm = ChatBotModel(direction="forward", size=1)
 
         #load data into dictionary dictId2Line
         lineParts = []
