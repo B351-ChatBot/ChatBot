@@ -125,7 +125,8 @@ def train_neural_network(x):
 				#print(t) #optimizer spit out none
 ##				print(feed_dict) #not defined, prob an argument being fed into both optimizer then cost.
 
-##				print(sess.run(tf.nn.top_k(train_x[start], 10)))
+				print(sess.run(tf.nn.top_k(train_x[start], 100)))
+##				print(train_x[start])
 				epoch_loss += c
 				i+=batch_size
 				

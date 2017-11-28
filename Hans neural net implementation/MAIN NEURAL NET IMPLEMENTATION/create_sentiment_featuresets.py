@@ -80,10 +80,16 @@ def create_feature_sets_and_labels(pos,neg,test_size = 0.1):
 	#this dogs is ok
 	#dog ok,
         #[0,0,0,0,0,0..... 1, ... 1, ..]
-	
 
-	train_x = list(features[:,0][:-testing_size]) # features[:,0] = features, [1 0 0 1... representing rare unique words in question
+	
+	#TRAIN_X[2] "LABEL" OR ANSWER IS TRAIN_Y[2]
+
+	train_x = list(features[:,0][:-testing_size]) # features[:,0] = features, [1 0 0 1... representing rare unique words in question.
+                #train_x is the list of every question, formatted into [0 1 0 0..] form. where a 1 represents it has the corrosopnding rare word, 0 
 	train_y = list(features[:,1][:-testing_size]) # features[:,1] = labels, [0 0 0 0... 1 ... 0] representing the one right answer
+                #train_y is the list of every answer, formatted into [0 1 0 0..] form. where a 0 or 1 represents a whole answer
+
+	
 	test_x = list(features[:,0][-testing_size:]) #final accuracy test, using last 10% of data
 	test_y = list(features[:,1][-testing_size:]) 
 
