@@ -19,6 +19,34 @@ import time
 import sys
 
 class ChatBot:
+
+    def clean_text(text):
+        '''Clean text by removing unnecessary characters and altering the format of words.'''
+
+        text = text.lower()
+    
+        text = re.sub(r"i'm", "i am", text)
+        text = re.sub(r"he's", "he is", text)
+        text = re.sub(r"she's", "she is", text)
+        text = re.sub(r"it's", "it is", text)
+        text = re.sub(r"that's", "that is", text)
+        text = re.sub(r"what's", "that is", text)
+        text = re.sub(r"where's", "where is", text)
+        text = re.sub(r"how's", "how is", text)
+        text = re.sub(r"\'ll", " will", text)
+        text = re.sub(r"\'ve", " have", text)
+        text = re.sub(r"\'re", " are", text)
+        text = re.sub(r"\'d", " would", text)
+        text = re.sub(r"\'re", " are", text)
+        text = re.sub(r"won't", "will not", text)
+        text = re.sub(r"can't", "cannot", text)
+        text = re.sub(r"n't", " not", text)
+        text = re.sub(r"n'", "ng", text)
+        text = re.sub(r"'bout", "about", text)
+        text = re.sub(r"'til", "until", text)
+        text = re.sub(r"[-()\"#/@;:<>{}`+=~|.!?,]", "", text)
+        
+        return text
     
     def __init__(self,corpusTXT,corpusMAP):
         #load cornel corpus aquired from https://github.com/suriyadeepan/practical_seq2seq/blob/master/datasets/cornell_corpus/
@@ -66,12 +94,14 @@ class ChatBot:
         i = 0
         for q in self.trainQuestions:
             if (len(q.split()) >= min_senc_len and len(q.split()) <= max_senc_len):
+                q = clean_text(q)
                 reduce_qs_tmp.append(q)
                 reduce_ans_tmp.append(self.trainAnswers[i])
                 i += 1
         j = 0
         for a in reduce_ans_tmp:
             if (len(a.split()) >= min_senc_len and len(a.split()) <= max_senc_len):
+                a = clean_text(a)
                 self.reduce_ans.append(a)
                 self.reduce_qs.append(reduce_qs_tmp[j])
                 j += 1
@@ -224,10 +254,15 @@ class ChatBot:
         statement = statement.replace("&","")
         return statement
 
+    def listToFile(self,listname,file):
+        outfile = open(file,'w')
+        for item in listname:
+            outfile.write("%s\n" % item)        
+
 
     def converse(self,question):
         #clean up the question text
-        question = self.cleanS(question)
+        question = self.clean_text(question)
         #if question contains words for analysis
         if (question != ""):
             print ("Q: "+question)
@@ -264,6 +299,16 @@ class ChatBot:
 
             for p in potentialAnswersL:
                 potentialAnswers.append(p)
+
+            #output potential answers to file for NN
+            possibleAnswers = []
+            for entry in potentialAnswers:
+                entryText = self.reduce_ans[entry]
+                possibleAnswers.append(entryText)
+            self.listToFile(possibleAnswers,"postest.txt")
+
+            #run NN to get best_answer
+#            top_answer = call_nn("pos.txt")
 
             #instead of random sentence selection lets use highest tf-idf to make selection
             bestTfIdf = 0
